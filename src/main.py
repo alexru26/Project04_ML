@@ -81,7 +81,7 @@ if __name__ == '__main__':
     """
 
     environment = 'leduc-holdem'
-    model = 'human'
+    model = 'cfr_model'
 
     setup()
     main()
