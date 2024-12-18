@@ -69,6 +69,7 @@ class CFRModel:
         :return: list of expected utilities for all players
         """
 
+        # If game is over, return utilities
         if self.env.is_over():
             try:
                 return self.env.get_payoffs()
@@ -77,43 +78,42 @@ class CFRModel:
 
         current_player = self.env.get_player_id()
 
-        action_utilities = {}
-        state_utility = np.zeros(self.env.num_players)
-        obs, legal_actions = self.get_state(current_player)
-        action_probs = self.action_probs(obs, legal_actions, self.policy)
+        action_utilities = {} # Utilities for the actions I can take in this state
+        state_utility = np.zeros(self.env.num_players) # Utility for this state for both players which takes into action probability (weighted average)
+        obs, legal_actions = self.get_state(current_player) # State and legal actions
+        action_probs = self.action_probs(obs, legal_actions, self.policy) # Probability of actions
 
-        for action in legal_actions:
-            action_prob = action_probs[action]
-            new_probs = probs.copy()
-            new_probs[current_player] *= action_prob
+        for action in legal_actions: # For every branch in the node
+            action_prob = action_probs[action] # Change I am taking this branch
+            new_probs = probs.copy() # New total probability that I reach the next node
+            new_probs[current_player] *= action_prob 
 
-            # Keep traversing the child state
-            self.env.step(action)
-            utility = self.traverse_tree(new_probs, player_id)
-            self.env.step_back()
+            self.env.step(action) # Go forward
+            utility = self.traverse_tree(new_probs, player_id) # Get utility of this action
+            self.env.step_back() # Go back
 
-            state_utility += action_prob * utility
-            action_utilities[action] = utility
+            state_utility += action_prob * utility # Add action utility * action probability to state utility
+            action_utilities[action] = utility # Store action utility
 
+        # Just go back if not current player
         if not current_player == player_id:
             return state_utility
 
         # If it is current player, we record the policy and compute regret
-        player_prob = probs[current_player]
-        counterfactual_prob = (np.prod(probs[:current_player]) *
-                                np.prod(probs[current_player + 1:]))
-        player_state_utility = state_utility[current_player]
+        player_prob = probs[current_player] # probability that reached this state
+        counterfactual_prob = (np.prod(probs[:current_player]) * np.prod(probs[current_player + 1:])) # Probability that reached this state given others' actions
+        player_state_utility = state_utility[current_player] # State utility for this player
 
-        if obs not in self.regrets:
+        if obs not in self.regrets: # If observation not seen in regrets
             self.regrets[obs] = np.zeros(self.env.num_actions)
-        if obs not in self.average_policy:
+        if obs not in self.average_policy: # If not observation not seen in average policy
             self.average_policy[obs] = np.zeros(self.env.num_actions)
-        for action in legal_actions:
-            action_prob = action_probs[action]
-            regret = counterfactual_prob * (action_utilities[action][current_player]
+        for action in legal_actions: # For every action
+            action_prob = action_probs[action] # Action probability
+            regret = counterfactual_prob * (action_utilities[action][current_player] # Regret!
                     - player_state_utility)
-            self.regrets[obs][action] += regret
-            self.average_policy[obs][action] += self.iteration * player_prob * action_prob
+            self.regrets[obs][action] += regret # Add to regrets table
+            self.average_policy[obs][action] += self.iteration * player_prob * action_prob # Add data to average policy
         return state_utility
 
     def update_policy(self):
@@ -128,7 +128,7 @@ class CFRModel:
         """
         Apply regret matching
         :param obs: string that represents current state
-        :return:
+        :return: normalized action probabilities
         """
 
         regret = self.regrets[obs]
@@ -149,7 +149,7 @@ class CFRModel:
         :param obs: string that represents current state
         :param legal_actions: list of legal actions
         :param policy: dictionary of probabilities of actions that have been made
-        :return:
+        :return: action probabilities
         """
 
         if obs not in policy.keys():
