@@ -13,7 +13,7 @@ from rlcard.utils.utils import *
 
 class DeepCFRModel:
     """
-    Implementation of Deep Monte Carlos CFR algorithm
+    Implementation of Deep CFR algorithm
     """
 
     def __init__(self, env, model_path, lr=0.001):
@@ -91,8 +91,12 @@ class DeepCFRModel:
         :return: list of expected utilities for all players
         """
 
+        # If game is over, return utilities
         if self.env.is_over():
-            return self.env.get_payoffs()
+            try:
+                return self.env.get_payoffs()
+            except Exception:
+                return np.zeros(self.env.num_players)
 
         current_player = self.env.get_player_id()
         state, legal_actions = self.get_state(current_player)
