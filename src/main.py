@@ -30,6 +30,8 @@ def setup():
         agent = DeepCFRModel(env=env, model_path='../models/deep_cfr_model/'+str(environment)+'/deep_cfr_model')
     elif model == 'face_deep_cfr_model':
         agent = FaceDeepCFRModel(env=env, model_path='../models/face_deep_cfr_model/'+str(environment)+'/face_deep_cfr_model')
+    elif model == 'human':
+        agent = HumanAgent(env.num_actions)
     else:
         return Exception('Invalid model')
 
@@ -79,7 +81,7 @@ if __name__ == '__main__':
     """
 
     environment = 'leduc-holdem'
-    model = 'cfr_model'
+    model = 'human'
 
     setup()
     main()

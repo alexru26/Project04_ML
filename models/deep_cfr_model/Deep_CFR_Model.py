@@ -99,40 +99,42 @@ class DeepCFRModel:
                 return np.zeros(self.env.num_players)
 
         current_player = self.env.get_player_id()
-        state, legal_actions = self.get_state(current_player)
 
-        action_probs = self.action_probs(state, legal_actions)
-        action_utilities = {}
-        state_utility = np.zeros(self.env.num_players)
+        action_utilities = {}  # Utilities for the actions I can take in this state
+        state_utility = np.zeros(self.env.num_players)  # Utility for this state for both players which takes into action probability (weighted average)
+        obs, legal_actions = self.get_state(current_player)  # State and legal actions
+        action_probs = self.action_probs(obs, legal_actions)  # Probability of actions
 
-        for action in legal_actions:
-            action_prob = action_probs[action]
-            new_probs = probs.copy()
+        for action in legal_actions:  # For every branch in the node
+            action_prob = action_probs[action]  # Change I am taking this branch
+            new_probs = probs.copy()  # New total probability that I reach the next node
             new_probs[current_player] *= action_prob
 
-            # Traverse to the child state
-            self.env.step(action)
-            utility = self.traverse_tree(new_probs, player_id)
-            self.env.step_back()
+            self.env.step(action)  # Go forward
+            utility = self.traverse_tree(new_probs, player_id)  # Get utility of this action
+            self.env.step_back()  # Go back
 
-            state_utility += action_prob * utility
-            action_utilities[action] = utility
+            state_utility += action_prob * utility  # Add action utility * action probability to state utility
+            action_utilities[action] = utility  # Store action utility
 
-        if current_player != player_id:
+        # Just go back if not current player
+        if not current_player == player_id:
             return state_utility
 
         # Compute regret
-        counterfactual_prob = (np.prod(probs[:current_player]) *
-                               np.prod(probs[current_player + 1:]))
-        player_state_utility = state_utility[current_player]
-        regrets = np.zeros(self.env.num_actions)
-        for action in legal_actions:
-            regrets[action] = counterfactual_prob * (action_utilities[action][current_player]
-                                                     - player_state_utility)
+        # Probability that reached this state given others' actions
+        counterfactual_prob = (np.prod(probs[:current_player]) * np.prod(probs[current_player + 1:]))
+        player_state_utility = state_utility[current_player]  # State utility for this player
+
+        regrets = np.zeros(self.env.num_actions) # Regrets for this state
+
+        for action in legal_actions: # For every action
+            # Calculate regret
+            regrets[action] = counterfactual_prob * (action_utilities[action][current_player] - player_state_utility)
 
         # Store regrets and policy
-        self.regret_memory.append((state, regrets))
-        self.policy_memory.append((state, action_probs))
+        self.regret_memory.append((obs, regrets))
+        self.policy_memory.append((obs, action_probs))
 
         return state_utility
 
@@ -174,7 +176,7 @@ class DeepCFRModel:
         Predict action probabilities given state, legal actions
         :param obs: current state
         :param legal_actions: list of legal actions
-        :return:
+        :return: action probabilities
         """
 
         state_tensor = torch.tensor(obs, dtype=torch.float32)
