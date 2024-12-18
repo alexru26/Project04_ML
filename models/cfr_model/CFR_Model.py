@@ -9,7 +9,7 @@ from rlcard.utils.utils import *
 
 class CFRModel:
     """
-    Implementation of Monte Carlos CFR algorithm
+    Implementation of CFR algorithm
     """
 
     def __init__(self, env, model_path):
