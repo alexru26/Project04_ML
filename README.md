@@ -18,7 +18,7 @@ Run ```main.py``` to use the program.
 - https://github.com/ishikota/PyPokerEngine
 
 ## Functionality
-- Model 1: Monte Carlos CFR
+- Model 1: CFR
   - Uses policy table to determine what move to take based on state
   - After traverses down decision tree, goes back up and calculates regret
   - Regret = How much better this choice would've been
@@ -26,11 +26,12 @@ Run ```main.py``` to use the program.
   - Uses regret and action probabilities to calculate gain
   - Update policy table
   - Do that for both players
-  - Model trains until reaches Nash Equilibrium
-- Model 2: Deep Monte Carlos CFR 
+  - Model trains until reaches Nash equilibrium
+    - Means model is unbeatable
+- Model 2: Deep CFR 
   - Uses two deep neural networks to approximate action probabilities and regret
   - Same procedure as normal MCCFR
-- Model 3: Deep Monte Carlos CFR + Bluff
+- Model 3: Deep CFR + Bluff
   - Same as deep MCCFR but neural networks take into account another integer that represents likelihood opponent is bluffing
 
 ## Reasoning and Issues
@@ -49,4 +50,4 @@ Run ```main.py``` to use the program.
 - Collect bluff data throughout game and train model
   - Essentially building data of player's face
 - Make models faster because can't run normal poker
-  - Pruning?
+  - Implement Monte Carlos into CFR to look at less nodes
